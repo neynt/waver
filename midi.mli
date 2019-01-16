@@ -1,13 +1,13 @@
 type note =
-  { time: int
+  { time: float
+  ; dur: float
   ; midi: int
   ; chan: int
   ; velo: int
   }
 
 type t =
-  { time_unit: float
-  ; tracks: note list list
+  { tracks: note list list
   }
 
-val do_stuff : unit -> t
+val read_file : string -> t

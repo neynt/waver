@@ -4,7 +4,6 @@ type t =
   { f: float -> float
   ; dur: float
   }
-;;
 
 let zero =
   { f = (fun _t -> 0.)
@@ -52,11 +51,13 @@ let memoize { f; dur } =
 let render (signals : (float * t) list) =
   let index = ref (Map.empty (module Float)) in
   let _ =
-    List.sort signals ~compare:(fun (t1, _) (t2, _) -> Float.compare t1 t2)
-    |> List.fold ~init:[] ~f:(fun acc (t, signal) -> 
-        let acc = List.filter acc ~f:(fun (t', _) -> Float.(t' > t)) in
-        let acc = List.cons (t +. signal.dur, delay t signal) acc in
-        index := Map.set !index ~key:t ~data:(List.map ~f:snd acc);
+    List.sort signals ~compare:(fun (start1, _) (start2, _) -> Float.compare start1 start2)
+    |> List.fold ~init:[] ~f:(fun acc (start, signal) -> 
+        let acc =
+          List.filter acc ~f:(fun (start', _) -> Float.(start' > start))
+          |> List.cons (start +. signal.dur, delay start signal)
+        in
+        index := Map.set !index ~key:start ~data:(List.map ~f:snd acc);
         acc)
   in
   let f t =
