@@ -1,0 +1,4 @@
+*.wav
+.merlin
+.psci
+_build
