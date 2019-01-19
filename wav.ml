@@ -1,3 +1,6 @@
+(* Mostly lifted from ocaml-numerical-analysis.
+ * [MIT License] Copyright (C) 2015 Akinori ABE *)
+
 (* little-endian unsigned 16-bit integer *)
 let output_le_u16 oc n =
   output_byte oc (n land 0xff);

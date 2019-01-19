@@ -48,7 +48,7 @@ let memoize { f; dur } =
   ; dur
   }
 
-let render (signals : (float * t) list) =
+let render signals =
   let index = ref (Map.empty (module Float)) in
   let _ =
     List.sort signals ~compare:(fun (start1, _) (start2, _) -> Float.compare start1 start2)

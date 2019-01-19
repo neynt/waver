@@ -81,10 +81,12 @@ let read_file filename =
         | 0 -> seek_in ic (pos_in ic - 1);
         | _ -> running_status := (status lsr 4) land 0x7);
         match !running_status, status land 0xf with
-        | 0, _chan ->
+        | 0, chan ->
           let midi = input_byte ic in
-          let velo = input_byte ic in
-          printf "[%f] Note off (%d %d)\n" time midi velo;
+          let _velo = input_byte ic in
+          (*printf "[%f] Note off (%d %d)\n" time midi velo;*)
+          let start_time, velo = Hashtbl.find_exn pressed midi in
+          notes := List.cons { time = start_time; dur = time -. start_time; midi; chan; velo } !notes;
           ()
         | 1, chan ->
           let midi = input_byte ic in
@@ -113,21 +115,34 @@ let read_file filename =
           let program = input_byte ic in
           printf "[%f] Program change (%d)\n" time program;
           ()
+        | 5, _chan ->
+          let pressure = input_byte ic in
+          printf "[%f] Channel pressure (%d)\n" time pressure;
+        | 6, _chan ->
+          let lsb = input_byte ic in
+          let msb = input_byte ic in
+          let _pitch_wheel = msb lsl 7 + lsb in
+          (*printf "[%f] Pitch wheel change (0x%x)\n" time pitch_wheel;*)
+          ()
         | 7, 15 ->
           (* Meta event *)
           let meta = input_byte ic in
           let len = input_vlq ic in
           let content = really_input_string ic len in
           (match meta with
-            | 0 -> printf "[%f] Meta sequence number\n" time;
-            | 1 | 8 | 9 | 10 | 12 -> printf "[%f] Text-type meta 0x%x (%s)\n" time meta content;
+            | 0 ->
+              printf "[%f] Meta sequence number\n" time;
+            | 1 | 2 | 3
+            | 8 | 9 | 10
+            | 12 ->
+              printf "[%f] Text-type meta 0x%x (%s)\n" time meta content;
             | 0x51 ->
               seek_in ic (pos_in ic - 3);
               let tempo = input_be_u24 ic in
               printf "[%f] Meta set tempo to %d\n" time tempo;
               let start_time = time in
               let start_tick = !tick in
-              tempo_map := Map.add_exn !tempo_map ~key:start_tick ~data:(fun tick ->
+              tempo_map := Map.set !tempo_map ~key:start_tick ~data:(fun tick ->
                 start_time +. Float.of_int ((tick - start_tick) * tempo) /. (division *. 1_000_000.));
             | 0x58 -> printf "[%f] Meta time signature\n" time;
             | 0x59 -> printf "[%f] Meta key signature\n" time;
