@@ -2,3 +2,5 @@
 .merlin
 .psci
 _build
+*.png
+Session.vim
