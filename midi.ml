@@ -59,6 +59,11 @@ let input_vlq ic =
   aux 0
 ;;
 
+let key_signature_at t time =
+  Map.closest_key t.key_signatures `Less_or_equal_to time
+  |> Option.value_map ~default:{ accidentals = 0; quality = `Major } ~f:snd
+;;
+
 let read_file filename =
   let ic = Stdlib.open_in_bin filename in
   if (String.(<>) (really_input_string ic 4) "MThd") then failwith "Not MIDI format";

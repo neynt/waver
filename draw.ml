@@ -11,6 +11,17 @@ let rect (image: OImages.rgb24) x y w h c =
     done
   done
 
+let striped_rect (image: OImages.rgb24) x y w h stripe_width c1 c2 =
+  for x = (Int.max 0 x) to Int.min (x + w - 1) (image#width - 1) do
+    for y = (Int.max 0 y) to Int.min (y + h - 1) (image#height - 1) do
+      let color = match (x + y) / stripe_width % 2 with
+      | 0 -> c1
+      | _ -> c2
+      in
+      image#set x y color
+    done
+  done
+
 let fill (image: OImages.rgb24) c =
   rect image 0 0 image#width image#height c
 
@@ -26,9 +37,15 @@ let split_equal start stop num =
   |> Array.map ~f:(fun i -> i // num)
   |> split start stop
 
-let piano (image: OImages.rgb24) min_note max_note =
-  let semitone_width = 21
-  and spacing = 1
+let piano
+  ?(white_color = rgb 128 128 128)
+  ?(black_color = rgb 0 0 0)
+  ?(semitone_width = 21)
+  (image: OImages.rgb24)
+  min_note
+  max_note
+=
+  let spacing = 1
   and black_height = 100
   and white_height = 150
   in
@@ -64,19 +81,19 @@ let piano (image: OImages.rgb24) min_note max_note =
       let y = yofs + spacing in
       let w = semitone_width - 2 * spacing in
       let h = black_height - spacing in
-      rect image x y w h (rgb 0 0 0);
+      rect image x y w h black_color;
     | _ ->
       let x = top_start midi + spacing in
       let y = yofs + spacing in
       let w = semitone_width - 2 * spacing in
       let h = white_height - spacing in
-      rect image x y w h (rgb 255 255 255);
+      rect image x y w h white_color;
       let white_idx = ((midi % 12) + 1) / 2 in
       let x = xofs + bot_start white_idx + spacing in
       let y = yofs + black_height + 2 * spacing in
       let w = (bot_start (white_idx + 1)) - (bot_start white_idx) - 2 * spacing in
       let x = x + octave_width * octave in
       let h = (white_height - black_height - 2 * spacing) in
-      rect image x y w h (rgb 255 255 255);
+      rect image x y w h white_color;
   done;
   top_start
