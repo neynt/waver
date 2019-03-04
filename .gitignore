@@ -3,4 +3,5 @@
 .psci
 _build
 *.png
+*.mkv
 Session.vim

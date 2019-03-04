@@ -15,7 +15,14 @@ type key_signature =
 
 type t =
   { tracks: note list list
+
+  (* Key signature (value) starts at time (key). *)
   ; key_signatures: (float, key_signature, Float.comparator_witness) Map.t
+
+  (* [beat_to_time beat] is the time at which the [beat]th beat starts. *)
+  (* TODO: figure out beats and measures *)
+  (*; beat_to_time: float -> float*)
+  (*; time_to_beat: float -> float*)
   }
 
 let input_byte = Stdlib.input_byte;;
@@ -70,13 +77,12 @@ let read_file filename =
   let _chunk_len = input_be_u32 ic in
   let _midi_format = input_be_u16 ic in
   let _num_tracks = input_be_u16 ic in
-  let division = input_be_u16 ic in
-  (match division lsr 14 with
+  let ticks_per_qn = input_be_u16 ic in
+  (match ticks_per_qn lsr 14 with
   | 1 -> failwith "Negative SMPTE format not supported"
   | _ -> ());
-  (*printf "Format: %d - Tracks: %d - Division: %d\n" midi_format num_tracks division;*)
-  let division = Float.of_int division in
-
+  (*printf "Format: %d - Tracks: %d - Division: %d\n" midi_format num_tracks ticks_per_qn;*)
+  let ticks_per_qn = Float.of_int ticks_per_qn in
   let tracks = ref [] in
   let key_signatures = ref (Map.empty (module Float)) in
   try
@@ -165,7 +171,7 @@ let read_file filename =
               let start_time = time in
               let start_tick = !tick in
               tempo_map := Map.set !tempo_map ~key:start_tick ~data:(fun tick ->
-                start_time +. Float.of_int ((tick - start_tick) * tempo) /. (division *. 1_000_000.));
+                start_time +. Float.of_int ((tick - start_tick) * tempo) /. (ticks_per_qn *. 1_000_000.));
             | 0x58 -> (*printf "[%f] Meta time signature\n" time;*) ()
             | 0x59 ->
               (*printf "[%f] Meta key signature\n" time;*)
@@ -198,7 +204,7 @@ let read_file filename =
     let tempo_map =
       Map.add_exn tempo_map
         ~key:Int.min_value
-        ~data:(fun ticks -> Float.of_int ticks *. 500_000. /. division /. 1_000_000.)
+        ~data:(fun ticks -> Float.of_int ticks *. 500_000. /. ticks_per_qn /. 1_000_000.)
     in
     let rec chunk_loop tempo_map =
       let track, tempo_map = read_chunk ic tempo_map in
@@ -211,6 +217,8 @@ let read_file filename =
   let result =
     { tracks = !tracks
     ; key_signatures = !key_signatures
+    (*; beat_to_time = !beat_to_time*)
+    (*; time_to_beat = !time_to_beat*)
     }
   in
   result

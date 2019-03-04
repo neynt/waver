@@ -17,6 +17,18 @@ let major tonic =
   ; offsets = [|0; 2; 4; 5; 7; 9; 11|]
   }
 
+let major_triad root =
+  { tonic = root
+  ; period = 12
+  ; offsets = [|0; 4; 7|]
+  }
+
+let minor_triad root =
+  { tonic = root
+  ; period = 12
+  ; offsets = [|0; 3; 7|]
+  }
+
 let natural_minor tonic =
   { tonic
   ; period = 12
@@ -56,7 +68,7 @@ let scale_degree { tonic; period; offsets } midi =
 ;;
 
 let at { tonic; period; offsets } i =
-  let divmod a b = a / b, a % b in
+  let divmod a b = a /% b, a % b in
   let octave, ofs = divmod i (Array.length offsets) in
   tonic + (period * octave) + Array.get offsets ofs
 ;;

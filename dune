@@ -1,3 +1,5 @@
 (executable
- (name hello)
- (libraries base camlimages.core camlimages.png))
+ (name waver)
+ (libraries core base camlimages.core camlimages.png)
+ (preprocess (pps ppx_jane)))
+(data_only_dirs frames data)

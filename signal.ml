@@ -18,7 +18,6 @@ let create f dur =
   }
 
 let create_inf f = create f Float.infinity
-let at { f; dur } t = if Float.(<) t 0. || Float.(>) t dur then 0. else f t
 let delay sec { f; dur } =
   { f = (fun t -> f (t -. sec))
   ; dur = dur +. sec
@@ -72,8 +71,41 @@ let render signals =
   in
   { f; dur }
 
-let _render_slow signals =
+(*
+let render_slow signals =
   signals 
   |> List.map ~f:(fun (start, signal) -> delay start signal)
   |> List.reduce_balanced ~f:add
   |> Option.value ~default:zero
+*)
+
+let phase_mod { f = f_mod; _ } { f = f_orig; dur } =
+  { f = (fun t -> f_orig (f_mod t))
+  ; dur
+  }
+
+let freq freq { f; dur } =
+  { f = (fun t -> f (t *. freq))
+  ; dur
+  }
+;;
+
+(* Linear frequency chirp. [f1] is the initial frequency multiplier; [f2] is
+ * the frequency multiplier after [length] time. We obtained the constants by
+ * by solving f'(t) = c1*t + c2; f'(0) = f1; f'(length) = f2; f(0) = 0
+ *)
+let chirp_lin f1 f2 length =
+  let open Float in
+  let c1 = 0.5 * ((f2 - f1) / length) in
+  let c2 = f1 in
+  phase_mod (create_inf (fun t -> c1*t*t + c2*t))
+;;
+
+(* Exponential frequency chirp. *)
+let chirp_exp f1 f2 length =
+  let open Float in
+  let c1 = f1 in
+  let c2 = log (f2 / f1) / length in
+  let c3 = c1 / c2 in
+  phase_mod (create_inf (fun t -> c3 * exp (c2 * t) - c3))
+;;

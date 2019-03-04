@@ -6,13 +6,17 @@ on_exit() {
 }
 
 do_stuff() {
-	time _build/default/waver.exe frame data/broken_moon.mid frame.png
+	kill $(jobs -p)
+	while [[ ! -x _build/default/waver.exe ]]; do
+		sleep 0.1
+	done
+	time _build/default/waver.exe trigger output.wav
+	mpv output.wav &
 }
 
 trap on_exit SIGINT
 
 do_stuff
-while true; do eog frame.png; done &
 while true; do
 	if [[ -e _build/default/waver.exe ]]; then
 		inotifywait -e close_write _build/default/waver.exe
