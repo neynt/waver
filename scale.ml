@@ -1,7 +1,9 @@
 open Base
 
+(* Scales are indexed subsets of notes. Chords are small scales. *)
+
 type t =
-  { tonic: int
+  { root: int
   ; period: int
   ; offsets: int array
   }
@@ -11,28 +13,42 @@ type degree =
   ; accidental: [`Sharp | `Flat | `Natural]
   }
 
-let major tonic =
-  { tonic
+type roman_chord =
+  [ `I | `II | `III | `IV | `V | `VI | `VII
+  | `i | `ii | `iii | `iv | `v | `vi | `vii
+  ]
+;;
+
+let major root =
+  { root
   ; period = 12
   ; offsets = [|0; 2; 4; 5; 7; 9; 11|]
   }
 
+let natural_minor root =
+  { root
+  ; period = 12
+  ; offsets = [|0; 2; 3; 5; 7; 8; 10|]
+  }
+
+let minor = natural_minor
+
 let major_triad root =
-  { tonic = root
+  { root = root
   ; period = 12
   ; offsets = [|0; 4; 7|]
   }
 
 let minor_triad root =
-  { tonic = root
+  { root = root
   ; period = 12
   ; offsets = [|0; 3; 7|]
   }
 
-let natural_minor tonic =
-  { tonic
+let dim_triad root =
+  { root = root
   ; period = 12
-  ; offsets = [|0; 2; 3; 5; 7; 8; 10|]
+  ; offsets = [|0; 3; 6|]
   }
 
 let accidental_of_offset = function
@@ -55,8 +71,8 @@ let from_accidental_count ?(quality = `Major) count =
   | `Minor -> natural_minor (major_tonic - 3)
 ;;
 
-let scale_degree { tonic; period; offsets } midi =
-  let leftover = midi - tonic in
+let scale_degree { root; period; offsets } midi =
+  let leftover = midi - root in
   let octave = leftover /% period in
   let ofs = leftover - octave * period in
   let index =
@@ -67,8 +83,28 @@ let scale_degree { tonic; period; offsets } midi =
   { index; accidental }
 ;;
 
-let at { tonic; period; offsets } i =
+let at { root; period; offsets } i =
   let divmod a b = a /% b, a % b in
   let octave, ofs = divmod i (Array.length offsets) in
-  tonic + (period * octave) + Array.get offsets ofs
+  root + (period * octave) + Array.get offsets ofs
 ;;
+
+let subscale t indices =
+  let root = at t (List.hd_exn indices) in
+  let offsets = Array.of_list_map indices ~f:((fun i -> at t i - root)) in
+  { root
+  ; period = t.period
+  ; offsets
+  }
+;;
+
+let invert t ~steps =
+  let root = at t steps in
+  let offsets = Array.mapi t.offsets ~f:(fun i _ -> (at t (steps + i)) - root) in
+  { root
+  ; period = t.period
+  ; offsets
+  }
+;;
+
+let shift_octaves t octaves = { t with root = t.root + octaves * t.period }

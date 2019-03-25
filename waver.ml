@@ -1,52 +1,5 @@
 open Base
 
-(* Environment that aids in composing melodies. *)
-module Composition () = struct
-  let notes: (float * Signal.t) list ref = ref []
-  let bpm: float ref = ref 120.
-  let pos: float ref = ref 0.
-
-  let bt' i = i *. (60. /. !bpm)
-  let bt i = bt' (Float.of_int i)
-  let at' beat signal = notes := (bt' (!pos +. beat), signal) :: !notes
-  let at beat = at' (Float.of_int beat)
-  let advance' beats = pos := !pos +. beats
-  let advance beats = advance' (Float.of_int beats)
-  let seek' beats = pos := beats
-  let seek beats = pos := (Float.of_int beats)
-  let play beats signal =
-    at 0 signal;
-    advance beats;
-  ;;
-  let result () = List.rev !notes
-end
-
-module MyComp = Composition ()
-
-let song_demo output_file =
-  let open MyComp in
-  let open Instrument in
-  bpm := 240.;
-
-  let fill chord =
-    List.iter [0; 1; 2; 3] ~f:(fun i -> at i snare);
-    List.iter [0; 2; 1; 2] ~f:(fun note -> play 1 (blip (chord note) (bt 1)));
-  in
-
-  let scale = Scale.(at (major 48)) in
-  fill Scale.(at (major_triad (scale 7)));
-  fill Scale.(at (major_triad (scale 4)));
-  fill Scale.(at (minor_triad (scale 5)));
-  fill Scale.(at (minor_triad (scale 2)));
-  fill Scale.(at (major_triad (scale 3)));
-  fill Scale.(at (major_triad (scale 0)));
-  fill Scale.(at (major_triad (scale 3)));
-  fill Scale.(at (major_triad (scale 4)));
-
-  let song = Signal.render (result ()) in
-  Wav.save ~sampling_rate:44100 output_file [song];
-;;
-
 let midi_demo input_file output_file =
   let midi_file = Midi.read_file input_file in
   let time_scale = 1. in
@@ -257,7 +210,16 @@ let trigger_cmd =
       let%map_open
         output_file = anon ("output_file" %: string)
       in
-      fun () -> song_demo output_file)
+      fun () -> Adrestia_sfx.trigger output_file)
+
+let render_adrestia_sfx_cmd =
+  Core.Command.basic
+    ~summary:"Render Adrestia's sound effects to a directory."
+    Core.Command.Let_syntax.(
+      let%map_open
+        output_dir = anon ("output_dir" %: string)
+      in
+      fun () -> Adrestia_sfx.render output_dir)
 
 let command =
   Core.Command.group
@@ -266,6 +228,7 @@ let command =
     ; "frame", frame_cmd
     ; "video", video_cmd
     ; "trigger", trigger_cmd
+    ; "render-adrestia-sfx", render_adrestia_sfx_cmd
     ]
 
 let () = Core.Command.run command

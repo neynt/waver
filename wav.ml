@@ -27,7 +27,10 @@ let save ?(sampling_bits = 16) ~sampling_rate filename (signals: Signal.t list) 
     |> List.fold ~f:Float.max ~init:0.
   in
   let channels = List.length signals in
-  let n = (duration |> Float.round_up |> Int.of_float) * sampling_rate in
+  let n =
+    duration *. (Float.of_int sampling_rate)
+    |> Float.round_up |> Int.of_float
+  in
   let output_pt = match sampling_bits with
     | 8 -> output_le_s8f
     | 16 -> output_le_s16f
@@ -51,6 +54,7 @@ let save ?(sampling_bits = 16) ~sampling_rate filename (signals: Signal.t list) 
   List.init n ~f:Fn.id
   |> List.iter ~f:(fun i ->
     let t = i // sampling_rate in
-    List.iter signals ~f:(fun signal -> output_pt oc Signal.(signal.f t)));
+    List.iter signals ~f:(fun signal ->
+      output_pt oc (Float.clamp_exn ~min:(-1.0) ~max:1.0 Signal.(signal.f t))));
   close_out oc
 ;;

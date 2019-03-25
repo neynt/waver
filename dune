@@ -1,5 +1,5 @@
 (executable
  (name waver)
- (libraries core base camlimages.core camlimages.png)
+ (libraries core base angstrom camlimages.core camlimages.png)
  (preprocess (pps ppx_jane)))
 (data_only_dirs frames data)
