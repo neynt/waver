@@ -4,4 +4,5 @@
 _build
 *.png
 *.mkv
+*.mp3
 Session.vim

@@ -10,8 +10,10 @@ do_stuff() {
 	while [[ ! -x _build/default/waver.exe ]]; do
 		sleep 0.1
 	done
-	time _build/default/waver.exe trigger output.wav
-	mpv --loop output.wav &
+	IN_FILE="terra.wav"
+	OUT_FILE="output.wav"
+	time _build/default/waver.exe trigger $IN_FILE $OUT_FILE
+	mpv --loop $OUT_FILE &
 }
 
 trap on_exit SIGINT
