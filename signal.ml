@@ -10,11 +10,8 @@ type t = { f : float -> float; dur : float } [@@deriving fields, sexp]
 
 (* The zero signal is zero for zero time. *)
 let zero = { f = (fun _t -> 0.); dur = 0. }
-
 let create f dur = { f = (fun t -> if Float.( < ) t 0. then 0. else f t); dur }
-
 let create_inf f = create f Float.infinity
-
 let map { f = f'; dur } ~f = { f = Fn.compose f f'; dur }
 
 let memoize { f; dur } =
@@ -30,17 +27,13 @@ let sine ?(amp = 1.) freq =
 let cosine ?(amp = 1.) freq =
   (fun t -> amp *. Float.cos (2. *. pi *. freq *. t)) |> create_inf
 
-let saw freq =
-  (fun t -> (Float.mod_float (t *. freq) 1. *. 2.) -. 1.) |> create_inf
+let saw freq = (fun t -> (Float.mod_float (t *. freq) 1. *. 2.) -. 1.) |> create_inf
 
 let square ?(duty = 0.5) freq =
-  (fun t -> if Float.(mod_float (t * freq) 1. < duty) then -1. else 1.)
-  |> create_inf
+  (fun t -> if Float.(mod_float (t * freq) 1. < duty) then -1. else 1.) |> create_inf
 
 let dc level = create_inf (Fn.const level)
-
 let unpure_noise = (fun _t -> Random.float 2. -. 1.) |> create_inf
-
 let noise () = memoize unpure_noise
 
 (* Integrate the underlying signal, sampling [sr] times per second. *)
@@ -51,24 +44,15 @@ let integrate sr { f; dur } =
     Hashtbl.find_or_add cache sample ~default:(fun () ->
         aux (sample - 1) +. f (sample // sr))
   in
-  {
-    f =
-      (fun t -> aux (Int.of_float (Float.round_nearest (t *. Float.of_int sr))));
-    dur;
-  }
+  { f = (fun t -> aux (Int.of_float (Float.round_nearest (t *. Float.of_int sr)))); dur }
 
 let brown_noise () = noise () |> integrate 44100
-
 let decay tau = (fun t -> Float.exp (-.t /. tau)) |> create_inf
-
 let ramp = create_inf Fn.id
 
 (* Signal operators *)
 let delay sec { f; dur } = { f = (fun t -> f (t -. sec)); dur = dur +. sec }
-
-let crop sec { f; _ } =
-  { f = (fun t -> if Float.(t <= sec) then f t else 0.); dur = sec }
-
+let crop sec { f; _ } = { f = (fun t -> if Float.(t <= sec) then f t else 0.); dur = sec }
 let gain amp { f; dur } = { f = (fun t -> amp *. f t); dur }
 
 let mul { f = f1; dur = dur1 } { f = f2; dur = dur2 } =
@@ -131,26 +115,24 @@ let chirp_exp f1 f2 length =
   let c2 = f1 / c1 in
   phase_mod (create_inf (fun t -> (c2 * exp (c1 * t)) - c2))
 
-let echo delay { f; dur } =
-  { f = (fun t -> (f t +. f (t +. delay)) /. 2.); dur }
+let echo delay { f; dur } = { f = (fun t -> (f t +. f (t +. delay)) /. 2.); dur }
 
 let pwlin ?(y0 = 0.0) transitions =
   let fns, _, _ =
-    List.fold transitions
+    List.fold
+      transitions
       ~init:(Map.empty (module Float), 0.0, y0)
       ~f:(fun (fns, t, y1) (dur, y2) ->
         (* f(t) = mt + b *)
         let t' = t +. dur in
         let m = (y2 -. y1) /. dur in
         let b = y1 -. (t *. m) in
-        (Map.add_exn fns ~key:t' ~data:(fun t -> (m *. t) +. b), t', y2))
+        Map.add_exn fns ~key:t' ~data:(fun t -> (m *. t) +. b), t', y2)
   in
-  {
-    f =
+  { f =
       (fun t ->
-        if Float.(t < 0.) then 0.
-        else
-          (Map.closest_key fns `Greater_or_equal_to t |> Option.value_exn |> snd)
-            t);
-    dur = Float.infinity;
+        if Float.(t < 0.)
+        then 0.
+        else (Map.closest_key fns `Greater_or_equal_to t |> Option.value_exn |> snd) t)
+  ; dur = Float.infinity
   }

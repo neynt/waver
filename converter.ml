@@ -15,8 +15,6 @@ let zero_order_hold ds =
 
 let discretize s ~sample_rate =
   let { Signal.f; dur } = s in
-  let length = Float.iround_nearest_exn (dur *. (Int.to_float sample_rate)) in
-  let samples =
-    Array.init length ~f:(fun i -> f (i // sample_rate))
-  in
+  let length = Float.iround_nearest_exn (dur *. Int.to_float sample_rate) in
+  let samples = Array.init length ~f:(fun i -> f (i // sample_rate)) in
   { Discrete_signal.samples; sample_rate }

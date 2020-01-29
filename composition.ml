@@ -2,20 +2,23 @@ open Base
 
 module Percussion = struct
   type note = Hits of char list | Rest of int [@@deriving sexp]
-
   type t = note list [@@deriving sexp]
 
   let of_text_notation =
     let open Angstrom in
-    let spaces = skip_while (function ' ' | '\n' -> true | _ -> false) in
-    let lex p = p <* spaces in
-    let group =
-      lift (fun x -> Hits (String.to_list x)) (take_while1 Char.is_alpha)
+    let spaces =
+      skip_while (function
+          | ' ' | '\n' -> true
+          | _ -> false)
     in
+    let lex p = p <* spaces in
+    let group = lift (fun x -> Hits (String.to_list x)) (take_while1 Char.is_alpha) in
     let rest =
       lift
         (fun x -> Rest (String.count x ~f:(Char.( = ) '.')))
-        (take_while1 (function '.' -> true | _ -> false))
+        (take_while1 (function
+            | '.' -> true
+            | _ -> false))
     in
     let beat = group <|> rest in
     let percussion = spaces *> many (lex beat) in
@@ -26,8 +29,8 @@ module Percussion = struct
     let _time, signals =
       List.fold t ~init:(0, []) ~f:(fun (time, signals) note ->
           match note with
-          | Hits chars -> (time + 1, List.map chars ~f:(Map.find_exn sounds))
-          | Rest dur -> (time + dur, signals))
+          | Hits chars -> time + 1, List.map chars ~f:(Map.find_exn sounds)
+          | Rest dur -> time + dur, signals)
     in
     signals
 end
@@ -36,31 +39,18 @@ end
  * nicer interface. *)
 module Make () = struct
   let notes : (float * Signal.t) list ref = ref []
-
   let bpm : float ref = ref 120.
-
   let pos : float ref = ref 0.
-
   let pos_start : float ref = ref 0.
-
   let pos_end : float ref = ref Float.infinity
-
   let marks : float list ref = ref []
-
   let bt' i = i *. (60. /. !bpm)
-
   let bt i = bt' (Float.of_int i)
-
   let at' beat signal = notes := (bt' (!pos +. beat), signal) :: !notes
-
   let at beat = at' (Float.of_int beat)
-
   let advance' beats = pos := !pos +. beats
-
   let advance beats = advance' (Float.of_int beats)
-
   let seek' beats = pos := beats
-
   let seek beats = pos := Float.of_int beats
 
   let play beats signal =
@@ -68,20 +58,22 @@ module Make () = struct
     advance beats
 
   let start_here () = pos_start := !pos
-
   let end_here () = pos_end := !pos
 
   (* Marks allow you to save positions in the track and return to them. *)
   let push_mark () = marks := !pos :: !marks
 
   let set_mark () =
-    marks := match !marks with [] -> [ !pos ] | _ :: tl -> !pos :: tl
+    marks
+      := match !marks with
+         | [] -> [ !pos ]
+         | _ :: tl -> !pos :: tl
 
   let pop_mark () =
     match !marks with
     | hd :: tl ->
-        pos := hd;
-        marks := tl
+      pos := hd;
+      marks := tl
     | _ -> failwith "empty mark stack"
 
   let get_mark () = pos := List.hd_exn !marks
@@ -99,7 +91,7 @@ module Make () = struct
 
   let result () =
     List.filter !notes ~f:(fun (t, _) -> Float.(t < bt' !pos_end))
-    |> List.map ~f:(fun (t, s) -> (t -. bt' !pos_start, s))
+    |> List.map ~f:(fun (t, s) -> t -. bt' !pos_start, s)
     |> List.rev
 
   let melody ~instrument scale text_notation =
@@ -107,8 +99,7 @@ module Make () = struct
     List.iter notes ~f:(fun { content; length } ->
         match content with
         | `Pitch { index; accidental } ->
-            play length
-              (instrument (Scale.at scale index + accidental) (bt length))
+          play length (instrument (Scale.at scale index + accidental) (bt length))
         | `Rest -> advance length)
 
   let play_perc text_notation (sounds : (char * Signal.t) List.t) =
@@ -118,8 +109,8 @@ module Make () = struct
       List.iter percussion ~f:(fun note ->
           match note with
           | Hits chars ->
-              List.iter chars ~f:(fun c -> at 0 (Map.find_exn sounds c));
-              advance 1
+            List.iter chars ~f:(fun c -> at 0 (Map.find_exn sounds c));
+            advance 1
           | Rest dur -> advance dur)
     in
     ()

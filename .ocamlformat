@@ -1,1 +1,5 @@
+profile=janestreet
 let-binding-spacing=compact
+break-separators=before
+dock-collection-brackets=false
+type-decl=compact
