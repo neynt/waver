@@ -32,6 +32,12 @@ let saw freq = (fun t -> (Float.mod_float (t *. freq) 1. *. 2.) -. 1.) |> create
 let square ?(duty = 0.5) freq =
   (fun t -> if Float.(mod_float (t * freq) 1. < duty) then -1. else 1.) |> create_inf
 
+let triangle ?(duty = 0.5) freq =
+  (fun t ->
+    let t = Float.mod_float (t *. freq) 1. in
+    ((if Float.(t < duty) then t /. duty else (1. -. t) /. (1. -. duty)) *. 2.) -. 1.)
+  |> create_inf
+
 let dc level = create_inf (Fn.const level)
 let unpure_noise = (fun _t -> Random.float 2. -. 1.) |> create_inf
 let noise () = memoize unpure_noise
@@ -128,6 +134,12 @@ let pwlin ?(y0 = 0.0) transitions =
         let m = (y2 -. y1) /. dur in
         let b = y1 -. (t *. m) in
         Map.add_exn fns ~key:t' ~data:(fun t -> (m *. t) +. b), t', y2)
+  in
+  let fns =
+    Map.add_exn
+      fns
+      ~key:Float.max_finite_value
+      ~data:(Fn.const (snd (List.last_exn transitions)))
   in
   { f =
       (fun t ->

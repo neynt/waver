@@ -13,6 +13,7 @@ val sine : ?amp:float -> float -> t
 val cosine : ?amp:float -> float -> t
 val saw : float -> t
 val square : ?duty:float -> float -> t
+val triangle : ?duty:float -> float -> t
 val dc : float -> t
 val unpure_noise : t
 val noise : unit -> t

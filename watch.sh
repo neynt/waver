@@ -9,18 +9,17 @@ waver() {
   time _build/default/waver.exe "$@"
 }
 
-frame_broken_moon() {
-  waver frame data/broken_moon.mid frame.png
-}
-
-frame_terra() {
-  waver frame-spectrum terra.wav frame.png output.wav -time 10
-}
+mpv_pid=
 
 regen_all() {
   #kill $(jobs -p) &> /dev/null
-  frame_terra
+  #waver frame data/broken_moon.mid frame.png
+  waver frame-spectrum terra.wav frame.png output.wav -time 10
+
+  #[[ ! -z $mpv_pid ]] && kill $mpv_pid
+  #waver render-workspace output.wav
   #mpv --loop output.wav &
+  #mpv_pid=$!
 }
 
 trap on_exit SIGINT

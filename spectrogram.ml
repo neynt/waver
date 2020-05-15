@@ -15,6 +15,7 @@ let plot_signal
     ?(lower = -1.)
     ?(upper = 1.)
     ?(resolution = 44100)
+    ?(color = Fn.const (Draw.rgb 255 255 255))
     (signal : Signal.t)
     w
     h
@@ -46,7 +47,7 @@ let plot_signal
         List.max_elt pixel_samples ~compare:Float.compare |> Option.value_exn |> y_of_s
       in
       let h = y1 - y0 + 1 in
-      Draw.rect image x y0 1 h (Draw.rgb 255 255 255);
+      Draw.rect image x y0 1 h (color x);
       loop (x + 1) (List.last_exn pixel_samples))
   in
   loop 0 (signal.f (-1 // resolution));
@@ -102,6 +103,7 @@ let spectrum2 input_file =
       |> Signal.crop (samples // sample_rate)
     in
     let discrete_signal = Converter.discretize signal ~sample_rate in
+    let fft_length = Array.length discrete_signal.samples in
     let fft_signal =
       { discrete_signal with
         samples = fft discrete_signal.samples |> Array.map ~f:Caml.Complex.norm
@@ -110,7 +112,20 @@ let spectrum2 input_file =
       |> Signal.map ~f:(fun s -> Float.log1p s)
     in
     let fft_signal = fft_signal |> Signal.crop (fft_signal.dur /. 2.) in
-    plot_signal ~lower:(-0.1) ~upper:5. fft_signal 1200 900 filename
+    let freq_to_note = Temperament.equal_inv 440. in
+    plot_signal
+      ~lower:(-0.1)
+      ~upper:5.
+      ~color:(fun x ->
+        let freq = (x // 1920 *. Float.of_int fft_length) +. 1. in
+        let octave_position = freq_to_note freq /. 12. in
+        { Chroma.h = Float.mod_float (octave_position +. 100.) 1.; s = 1.; v = 1. }
+        |> Chroma.hsv_to_rgb
+        |> Chroma.rgb_to_color)
+      fft_signal
+      1920
+      900
+      filename
   in
   save_frame
 

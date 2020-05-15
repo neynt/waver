@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SONG=terra
-FPS=60
+FPS=30
 
 OUT_DIR=frames/$SONG
 OUTPUT_MKV=$SONG.mkv

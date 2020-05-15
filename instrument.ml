@@ -16,14 +16,16 @@ let vibrato f1 f2 period =
 let bloop_base ~wave ?(velo = 1.0) midi len =
   let freq = Temperament.equal 440. midi in
   wave freq
-  |> vibrato 1. 1.03 13.
-  |> mul (decay (Float.max (len /. 3.0) 0.07))
-  |> gain (0.05 *. velo)
+  (* |> vibrato 1. 1.007 7. *)
+  |> mul (decay (Float.max (len /. 1.0) 0.07))
+  |> mul (pwlin [ 0.05, 1.; 0.10, 1. ])
+  |> gain (0.02 *. velo)
   |> crop len
 
 let choir f = f |> add (freq 1.01 f) |> add (freq 0.997 f) |> gain (1 // 3)
 let blip = bloop_base ~wave:(square ~duty:0.5)
 let bleep = bloop_base ~wave:saw
 let bloop = bloop_base ~wave:sine
+let blaap = bloop_base ~wave:(triangle ~duty:0.5)
 let kick = square 200. |> chirp_exp 1. 0.4 0.1 |> crop 0.1 |> gain 0.05 |> mul (decay 0.1)
 let hihat = unpure_noise |> crop 0.05 |> gain 0.05 |> mul (decay 0.05)

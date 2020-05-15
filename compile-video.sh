@@ -1,6 +1,9 @@
 #!/bin/bash
 
-SONG=resurrections
+INPUT=data/resurrections.mid
+FILETYPE="${INPUT##*.}"
+SONG=$(basename "${INPUT%.*}")
+RENDER_CMD='video'
 FPS=30
 
 INPUT=data/$SONG.mid

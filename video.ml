@@ -128,7 +128,7 @@ let frame_demo input_file =
             | `White -> white_color
           in
           let style : Draw.rect_style =
-            let mix c = chr_to_col (Chroma.mix fadedness key_color (col_to_chr c)) in
+            let mix c = chr_to_col (Chroma.mix_rgb fadedness key_color (col_to_chr c)) in
             match style with
             | Flat color -> Flat (mix color)
             | Striped (w, color, color') -> Striped (w, mix color, mix color')
@@ -151,7 +151,7 @@ let frame_demo input_file =
 
 let video save_frame max_time output_dir fps =
   let max_frame = Int.of_float (Float.round_up (Float.of_int fps *. max_time)) in
-  Caml.Printf.printf "Will generate %d frames." max_frame;
+  Caml.Printf.printf "Will generate %d frames.\n" max_frame;
   Core.Unix.mkdir_p output_dir;
   let rec loop frame =
     let time_ofs = frame // fps in

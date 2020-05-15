@@ -14,9 +14,16 @@ let chromatic root =
 let major root = { root; period = 12; offsets = [| 0; 2; 4; 5; 7; 9; 11 |] }
 let natural_minor root = { root; period = 12; offsets = [| 0; 2; 3; 5; 7; 8; 10 |] }
 let minor = natural_minor
-let major_triad root = { root; period = 12; offsets = [| 0; 4; 7 |] }
-let minor_triad root = { root; period = 12; offsets = [| 0; 3; 7 |] }
+let maj_triad root = { root; period = 12; offsets = [| 0; 4; 7 |] }
+let min_triad root = { root; period = 12; offsets = [| 0; 3; 7 |] }
 let dim_triad root = { root; period = 12; offsets = [| 0; 3; 6 |] }
+let aug_triad root = { root; period = 12; offsets = [| 0; 4; 8 |] }
+let dream root = { root; period = 12; offsets = [| 0; 5; 6; 7 |] }
+let maj_seventh root = { root; period = 12; offsets = [| 0; 4; 7; 11 |] }
+let dom_seventh root = { root; period = 12; offsets = [| 0; 4; 7; 10 |] }
+let min_seventh root = { root; period = 12; offsets = [| 0; 3; 7; 10 |] }
+let min_maj_seventh root = { root; period = 12; offsets = [| 0; 3; 7; 11 |] }
+let aug_maj_seventh root = { root; period = 12; offsets = [| 0; 4; 8; 11 |] }
 
 let accidental_of_offset = function
   | -1 -> `Flat

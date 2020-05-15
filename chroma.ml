@@ -5,6 +5,10 @@ type hsv = { h : float; s : float; v : float }
 type lab = { l : float; a : float; b : float }
 type xyz = { x : float; y : float; z : float }
 
+let rgb_to_color { r; g; b } =
+  let quantize x = Float.iround_nearest_exn (x *. 255.) in
+  { Color.r = quantize r; g = quantize g; b = quantize b }
+
 (* Illuminant D65 *)
 let xn = 95.047
 let yn = 100.000
@@ -68,7 +72,22 @@ let rgb_to_hsv { r; g; b } =
   let h = Float.mod_float (60. *. h) 1. in
   { h; s; v }
 
-let mix ratio { r = r1; g = g1; b = b1 } { r = r2; g = g2; b = b2 } =
+let hsv_to_rgb { h; s; v } =
+  let c = v *. s in
+  let h' = h *. 6. in
+  let x = c *. (1. -. Float.abs (Float.mod_float h' 2. -. 1.)) in
+  let r, g, b =
+    match Float.iround_down_exn h' with
+    | 0 -> c, x, 0.
+    | 1 -> x, c, 0.
+    | 2 -> 0., c, x
+    | 3 -> 0., x, c
+    | 4 -> x, 0., c
+    | _ -> c, 0., x
+  in
+  { r; g; b }
+
+let mix_rgb ratio { r = r1; g = g1; b = b1 } { r = r2; g = g2; b = b2 } =
   let w1 = 1. -. ratio
   and w2 = ratio in
   { r = (w1 *. r1) +. (w2 *. r2)

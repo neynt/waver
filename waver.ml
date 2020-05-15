@@ -19,7 +19,7 @@ let midi_demo input_file output_file =
   in
   Wav.save ~sampling_rate:44100 output_file [ Signal.render offsets_and_signals ]
 
-let render_cmd =
+let render_midi_cmd =
   Command.basic
     ~summary:"Render a midi file to a wav."
     [%map_open.Command
@@ -67,7 +67,7 @@ let frame_spectrum_cmd =
           |> List.map ~f:(Signal.crop 0.3)
           |> Wav.save ~sampling_rate wav_output_file
         in
-        let save_frame = Vivid.spectrum2 input_file in
+        let save_frame = Spectrogram.spectrum2 input_file in
         save_frame time frame_output_file]
 
 let video_spectrum_cmd =
@@ -78,7 +78,7 @@ let video_spectrum_cmd =
       and output_dir = anon ("output_dir" %: string)
       and fps = fps_flag in
       fun () ->
-        let save_frame = Vivid.spectrum2 input_file in
+        let save_frame = Spectrogram.spectrum2 input_file in
         Video.video save_frame 30. output_dir fps]
 
 let render_adrestia_sfx_cmd =
@@ -88,15 +88,23 @@ let render_adrestia_sfx_cmd =
       let output_dir = anon ("output_dir" %: string) in
       fun () -> Adrestia_sfx.render output_dir]
 
+let render_workspace_cmd =
+  Command.basic
+    ~summary:"Render whatever is produced by workspace.ml"
+    [%map_open.Command
+      let output_file = anon ("output_file" %: string) in
+      fun () -> Workspace.render output_file]
+
 let command =
   Command.group
     ~summary:"make waves"
-    [ "render", render_cmd
+    [ "render-midi", render_midi_cmd
     ; "frame", frame_cmd
     ; "video", video_cmd
     ; "frame-spectrum", frame_spectrum_cmd
     ; "video-spectrum", video_spectrum_cmd
     ; "render-adrestia-sfx", render_adrestia_sfx_cmd
+    ; "render-workspace", render_workspace_cmd
     ]
 
 let () = Command.run command
