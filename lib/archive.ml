@@ -1,20 +1,5 @@
-open Base
-module Compo = Composition.Make ()
+(** archive of unused code
 
-let render output_file =
-  let open Compo in
-  let open Instrument in
-  bpm := 130.;
-  let play beats note = play beats (blaap note (bt beats)) in
-  let melody = melody ~instrument:(fun note dur -> blip note dur) in
-  let chrom2 = Scale.chromatic 72 in
-  let chrom = Scale.chromatic 48 in
-  let scale = Scale.major 48 in
-  let bass_scale = Scale.shift_octaves scale (-2) in
-  start_here ();
-  let harmony ?(rot = 0) scale =
-    List.init 9 ~f:(fun i () -> play 2 (Scale.at scale (i + rot))) |> together
-  in
   let _I = Scale.(maj_triad (at scale 0)) in
   let _ii = Scale.(min_triad (at scale 1)) in
   let _iii = Scale.(min_triad (at scale 2)) in
@@ -22,16 +7,12 @@ let render output_file =
   let _V = Scale.(maj_triad (at scale 4)) in
   let _vi = Scale.(min_triad (at scale 5)) in
   let _vii = Scale.(dim_triad (at scale 6)) in
-  (*
-  harmony _ii;
-  harmony ~rot:(-1) _iii;
-  harmony ~rot:(-1) _vi;
-  harmony ~rot:(-1) _ii;
-  harmony _ii;
-  harmony ~rot:(-1) _iii;
-  harmony _V;
-  harmony ~rot:(-1) _I;
-*)
+  let h = harmony ~len:4 in
+  let rot = -3 in
+  together [ (fun () -> h _IV ~rot); (fun () -> melody scale {| 1 - 5 - |}) ];
+  together [ (fun () -> h _V ~rot); (fun () -> melody scale {| 2 4 - 5 |}) ];
+  together [ (fun () -> h _vi ~rot); (fun () -> melody scale {| 3 - 5 - |}) ];
+  together [ (fun () -> h _V ~rot); (fun () -> melody scale {| 4 5 - - |}) ];
   harmony _vi;
   harmony _IV;
   harmony _V;
@@ -40,7 +21,6 @@ let render output_file =
   harmony _IV;
   harmony _V;
   harmony _vii;
-  end_here ();
   melody chrom2 {| 3 - 2 - 3 - 0 - |};
   push_mark ();
   pop_mark ();
@@ -53,13 +33,14 @@ let render output_file =
     ; (fun () -> melody chrom {| 10 - 10 - 10 - 10 - |})
     ];
   together
-    [ (fun () -> melody chrom {| 3 - 2 - 3 - 0 - |})
+    [ (fun () -> melody chrom {|  3 -  2 -  3 -  0 - |})
     ; (fun () -> melody chrom {| 12 - 12 - 12 - 12 - |})
     ];
   together
     [ (fun () -> melody chrom {| 3 - 2 - 3 - 0 - |})
     ; (fun () -> melody chrom {| 12 - 12 - 12 - 12 - |})
     ];
+
   together
     [ (fun () ->
         play_perc
@@ -138,5 +119,5 @@ let render output_file =
       4 - - - - - - -
     |})
     ];
-  let song = Signal.render (result ()) in
-  Wav.save ~sampling_rate:44100 output_file [ song ]
+
+ *)

@@ -1,0 +1,7 @@
+(executables
+ (names waver)
+ (libraries waver)
+ (preprocess
+  (pps ppx_jane)))
+
+(data_only_dirs frames data)

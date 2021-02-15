@@ -19,7 +19,7 @@ let bloop_base ~wave ?(velo = 1.0) midi len =
   (* |> vibrato 1. 1.007 7. *)
   |> mul (decay (Float.max (len /. 1.0) 0.07))
   |> mul (pwlin [ 0.05, 1.; 0.10, 1. ])
-  |> gain (0.02 *. velo)
+  |> gain (0.05 *. velo)
   |> crop len
 
 let choir f = f |> add (freq 1.01 f) |> add (freq 0.997 f) |> gain (1 // 3)

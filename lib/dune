@@ -1,0 +1,5 @@
+(library
+ (name waver)
+ (libraries core base angstrom camlimages.core camlimages.png fftw3)
+ (preprocess
+  (pps ppx_jane)))

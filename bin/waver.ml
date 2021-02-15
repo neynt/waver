@@ -1,4 +1,5 @@
-open Base
+open Core_kernel
+open Waver
 module Command = Core.Command
 
 let fps_flag =
@@ -99,6 +100,7 @@ let command =
   Command.group
     ~summary:"make waves"
     [ "render-midi", render_midi_cmd
+    ; "ukulele-chord-shapes", Ukulele_chord_shapes.command
     ; "frame", frame_cmd
     ; "video", video_cmd
     ; "frame-spectrum", frame_spectrum_cmd

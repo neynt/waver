@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 
 on_exit() {
   kill $(jobs -p)
@@ -6,30 +7,28 @@ on_exit() {
 }
 
 waver() {
-  time _build/default/waver.exe "$@"
+  time ./waver "$@"
 }
 
-mpv_pid=
 
 regen_all() {
-  #kill $(jobs -p) &> /dev/null
-  #waver frame data/broken_moon.mid frame.png
-  waver frame-spectrum terra.wav frame.png output.wav -time 10
+  kill $(jobs -p) &> /dev/null
 
-  #[[ ! -z $mpv_pid ]] && kill $mpv_pid
-  #waver render-workspace output.wav
-  #mpv --loop output.wav &
-  #mpv_pid=$!
+  #waver frame data/broken_moon.mid frame.png
+  #waver frame-spectrum terra.wav frame.png output.wav -time 10
+
+  waver render-workspace output.wav
+  mpv --loop output.wav &
 }
 
 trap on_exit SIGINT
 
 regen_all
-while true; do eog frame.png; done &
+#while true; do eog frame.png; done &
 while true; do
-  if [[ -e _build/default/waver.exe ]]; then
-    inotifywait -e close_write _build/default/waver.exe
-    while [[ ! -x _build/default/waver.exe ]]; do
+  if [[ -e $(readlink ./waver) ]]; then
+    inotifywait -e close_write $(readlink ./waver)
+    while [[ ! -x $(readlink ./waver) ]]; do
       sleep 0.1
     done
     regen_all

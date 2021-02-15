@@ -1,2 +1,2 @@
 #!/bin/bash
-dune build waver.exe @fmt -w --auto-promote
+dune build @@default @fmt -w --auto-promote
