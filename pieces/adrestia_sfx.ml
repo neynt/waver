@@ -1,4 +1,5 @@
 open! Base
+open! Waver
 
 let button =
   let open Signal in

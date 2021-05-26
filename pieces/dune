@@ -1,0 +1,5 @@
+(library
+ (name waver_pieces)
+ (libraries waver)
+ (preprocess
+  (pps ppx_jane)))
