@@ -50,4 +50,4 @@ let of_text_notation =
       extender
   in
   let melody = spaces *> many (lex note) in
-  fun s -> parse_string melody s |> Result.ok_or_failwith
+  fun s -> parse_string ~consume:All melody s |> Result.ok_or_failwith

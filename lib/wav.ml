@@ -114,7 +114,7 @@ let load filename =
     string "RIFF" *> chunk_size *> string "WAVE" *> many1 chunk
   in
   let file_content = Stdio.In_channel.read_all filename in
-  let chunks = parse_string wav file_content |> Result.ok_or_failwith in
+  let chunks = parse_string ~consume:All wav file_content |> Result.ok_or_failwith in
   (*List.iter chunks ~f:(function
     | Format { channels; sampling_rate; bit_depth } ->
         Core.print_s

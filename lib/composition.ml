@@ -22,7 +22,7 @@ module Percussion = struct
     in
     let beat = group <|> rest in
     let percussion = spaces *> many (lex beat) in
-    fun s -> parse_string percussion s |> Result.ok_or_failwith
+    fun s -> parse_string ~consume:All percussion s |> Result.ok_or_failwith
 
   let render t (sounds : (char * Signal.t) List.t) =
     let sounds = Map.of_alist_exn (module Char) sounds in
