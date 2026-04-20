@@ -33,7 +33,7 @@ let fill (image : OImages.rgb24) c = rect image 0 0 image#width image#height c
 
 let split start stop intervals =
   Array.map intervals ~f:(fun i ->
-      start + (Float.of_int (stop - start) *. i |> Float.round_nearest |> Int.of_float))
+    start + (Float.of_int (stop - start) *. i |> Float.round_nearest |> Int.of_float))
 
 let split_equal start stop num =
   Array.init (num + 1) ~f:Fn.id |> Array.map ~f:(fun i -> i // num) |> split start stop
@@ -44,16 +44,16 @@ let key_color midi =
   | _ -> `White
 
 let piano
-    ?(white_color = rgb 128 128 128)
-    ?(black_color = rgb 0 0 0)
-    ?(color_overrides = Map.empty (module Int))
-    ?(semitone_width = 21)
-    ?(black_height = 100)
-    ?(white_height = 150)
-    ?(spacing = 1)
-    (image : OImages.rgb24)
-    min_note
-    max_note
+      ?(white_color = rgb 128 128 128)
+      ?(black_color = rgb 0 0 0)
+      ?(color_overrides = Map.empty (module Int))
+      ?(semitone_width = 21)
+      ?(black_height = 100)
+      ?(white_height = 150)
+      ?(spacing = 1)
+      (image : OImages.rgb24)
+      min_note
+      max_note
   =
   let octave_width = semitone_width * 12 in
   let semitone_places = split_equal 0 octave_width 12 in

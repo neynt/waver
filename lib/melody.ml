@@ -13,8 +13,8 @@ let of_text_notation =
   let open Angstrom in
   let spaces =
     skip_while (function
-        | ' ' | '\n' -> true
-        | _ -> false)
+      | ' ' | '\n' -> true
+      | _ -> false)
   in
   let lex p = p <* spaces in
   let sharp = char '#' *> return `Sharp in
@@ -22,29 +22,29 @@ let of_text_notation =
   let accidental = option `Natural (sharp <|> flat) in
   let extender =
     take_while (function
-        | '-' -> true
-        | ' ' -> true
-        | _ -> false)
+      | '-' -> true
+      | ' ' -> true
+      | _ -> false)
     >>| String.count ~f:(function
-            | '-' -> true
-            | _ -> false)
+      | '-' -> true
+      | _ -> false)
   in
   let integer =
     take_while1 (function
-        | '0' .. '9' -> true
-        | _ -> false)
+      | '0' .. '9' -> true
+      | _ -> false)
     >>| int_of_string
   in
   let note =
     lift3
       (fun index accidental extender ->
-        let accidental =
-          match accidental with
-          | `Sharp -> 1
-          | `Flat -> -1
-          | `Natural -> 0
-        in
-        { content = `Pitch { index; accidental }; length = extender + 1 })
+         let accidental =
+           match accidental with
+           | `Sharp -> 1
+           | `Flat -> -1
+           | `Natural -> 0
+         in
+         { content = `Pitch { index; accidental }; length = extender + 1 })
       integer
       accidental
       extender

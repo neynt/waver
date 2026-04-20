@@ -7,15 +7,15 @@ type t =
   { tracks : note list list
   ; (* Key signature (value) starts at time (key). *)
     key_signatures : (float, key_signature, Float.comparator_witness) Map.t
-        (* [beat_to_time beat] is the time at which the [beat]th beat starts. *)
-        (* TODO: figure out beats and measures *)
-        (*; beat_to_time: float -> float*)
-        (*; time_to_beat: float -> float*)
+    (* [beat_to_time beat] is the time at which the [beat]th beat starts. *)
+    (* TODO: figure out beats and measures *)
+    (*; beat_to_time: float -> float*)
+    (*; time_to_beat: float -> float*)
   }
 
 let input_byte = Stdlib.input_byte
 let really_input_string = Stdlib.really_input_string
-let printf = Caml.Printf.printf
+let printf = Stdlib.Printf.printf
 let seek_in = Stdlib.seek_in
 let pos_in = Stdlib.pos_in
 
@@ -60,8 +60,8 @@ let read_file filename =
   let _num_tracks = input_be_u16 ic in
   let ticks_per_qn = input_be_u16 ic in
   (match ticks_per_qn lsr 14 with
-  | 1 -> failwith "Negative SMPTE format not supported"
-  | _ -> ());
+   | 1 -> failwith "Negative SMPTE format not supported"
+   | _ -> ());
   (*printf "Format: %d - Tracks: %d - Division: %d\n" midi_format num_tracks ticks_per_qn;*)
   let ticks_per_qn = Float.of_int ticks_per_qn in
   let tracks = ref [] in
@@ -87,8 +87,8 @@ let read_file filename =
         let time = timing_fn !tick in
         let status = input_byte ic in
         (match status lsr 7 with
-        | 0 -> seek_in ic (pos_in ic - 1)
-        | _ -> running_status := (status lsr 4) land 0x7);
+         | 0 -> seek_in ic (pos_in ic - 1)
+         | _ -> running_status := (status lsr 4) land 0x7);
         match !running_status, status land 0xf with
         | 0, chan ->
           let midi = input_byte ic in
@@ -96,24 +96,24 @@ let read_file filename =
           (*printf "[%f] Note off (%d %d)\n" time midi velo;*)
           let start_time, velo = Hashtbl.find_exn pressed midi in
           notes
-            := List.cons
-                 { time = start_time; dur = time -. start_time; midi; chan; velo }
-                 !notes;
+          := List.cons
+               { time = start_time; dur = time -. start_time; midi; chan; velo }
+               !notes;
           ()
         | 1, chan ->
           let midi = input_byte ic in
           let velo = input_byte ic in
           (match velo with
-          | 0 ->
-            (* printf "[%f] Note 'off' (%d)\n" time midi; *)
-            let start_time, velo = Hashtbl.find_exn pressed midi in
-            notes
-              := List.cons
-                   { time = start_time; dur = time -. start_time; midi; chan; velo }
-                   !notes
-          | _ ->
-            (* printf "[%f] Note on (%d %d)\n" time midi velo; *)
-            ());
+           | 0 ->
+             (* printf "[%f] Note 'off' (%d)\n" time midi; *)
+             let start_time, velo = Hashtbl.find_exn pressed midi in
+             notes
+             := List.cons
+                  { time = start_time; dur = time -. start_time; midi; chan; velo }
+                  !notes
+           | _ ->
+             (* printf "[%f] Note on (%d %d)\n" time midi velo; *)
+             ());
           Hashtbl.set pressed ~key:midi ~data:(time, velo);
           ()
         | 2, _chan ->
@@ -146,48 +146,48 @@ let read_file filename =
           let len = input_vlq ic in
           let _content = really_input_string ic len in
           (match meta with
-          | 0 ->
-            (*printf "[%f] Meta sequence number\n" time;*)
-            ()
-          | 1 | 2 | 3 | 8 | 9 | 10 | 12 ->
-            (*printf "[%f] Text-type meta 0x%x (%s)\n" time meta content;*)
-            ()
-          | 0x51 ->
-            seek_in ic (pos_in ic - 3);
-            let tempo = input_be_u24 ic in
-            (*printf "[%f] Meta set tempo to %d\n" time tempo;*)
-            let start_time = time in
-            let start_tick = !tick in
-            tempo_map
-              := Map.set !tempo_map ~key:start_tick ~data:(fun tick ->
-                     start_time
-                     +. (Float.of_int ((tick - start_tick) * tempo)
-                        /. (ticks_per_qn *. 1_000_000.)))
-          | 0x58 -> (*printf "[%f] Meta time signature\n" time;*) ()
-          | 0x59 ->
-            (*printf "[%f] Meta key signature\n" time;*)
-            seek_in ic (pos_in ic - 2);
-            let accidentals = input_sbyte ic in
-            let quality_int = input_byte ic in
-            let quality =
-              match quality_int with
-              | 0 -> `Major
-              | 1 -> `Minor
-              | _ -> failwith "Unknown scale quality"
-            in
-            (*printf "%d accidentals; %d quality\n" accidentals quality_int;*)
-            key_signatures
-              := (match
-                    Map.add !key_signatures ~key:time ~data:{ accidentals; quality }
-                  with
-                 | `Ok x -> x
-                 | `Duplicate -> !key_signatures)
-          | 0x2f ->
-            (*printf "==END OF TRACK==\n";*)
-            fin := true
-          | _ ->
-            printf "[%f] Unknown meta 0x%x of length %d\n" time meta len;
-            ())
+           | 0 ->
+             (*printf "[%f] Meta sequence number\n" time;*)
+             ()
+           | 1 | 2 | 3 | 8 | 9 | 10 | 12 ->
+             (*printf "[%f] Text-type meta 0x%x (%s)\n" time meta content;*)
+             ()
+           | 0x51 ->
+             seek_in ic (pos_in ic - 3);
+             let tempo = input_be_u24 ic in
+             (*printf "[%f] Meta set tempo to %d\n" time tempo;*)
+             let start_time = time in
+             let start_tick = !tick in
+             tempo_map
+             := Map.set !tempo_map ~key:start_tick ~data:(fun tick ->
+                  start_time
+                  +. (Float.of_int ((tick - start_tick) * tempo)
+                      /. (ticks_per_qn *. 1_000_000.)))
+           | 0x58 -> (*printf "[%f] Meta time signature\n" time;*) ()
+           | 0x59 ->
+             (*printf "[%f] Meta key signature\n" time;*)
+             seek_in ic (pos_in ic - 2);
+             let accidentals = input_sbyte ic in
+             let quality_int = input_byte ic in
+             let quality =
+               match quality_int with
+               | 0 -> `Major
+               | 1 -> `Minor
+               | _ -> failwith "Unknown scale quality"
+             in
+             (*printf "%d accidentals; %d quality\n" accidentals quality_int;*)
+             key_signatures
+             := (match
+                   Map.add !key_signatures ~key:time ~data:{ accidentals; quality }
+                 with
+                  | `Ok x -> x
+                  | `Duplicate -> !key_signatures)
+           | 0x2f ->
+             (*printf "==END OF TRACK==\n";*)
+             fin := true
+           | _ ->
+             printf "[%f] Unknown meta 0x%x of length %d\n" time meta len;
+             ())
         | _, chan ->
           printf "[%f] Unknown status id %d (%d, %d)\n" time status !running_status chan;
           failwith "exiting"
@@ -197,7 +197,7 @@ let read_file filename =
     let tempo_map = Map.empty (module Int) in
     let tempo_map =
       Map.add_exn tempo_map ~key:Int.min_value ~data:(fun ticks ->
-          Float.of_int ticks *. 500_000. /. ticks_per_qn /. 1_000_000.)
+        Float.of_int ticks *. 500_000. /. ticks_per_qn /. 1_000_000.)
     in
     let rec chunk_loop tempo_map =
       let track, tempo_map = read_chunk ic tempo_map in

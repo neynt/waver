@@ -12,14 +12,14 @@ let fft data =
   Array.init dim ~f:(fun i -> y.{i})
 
 let plot_signal
-    ?(lower = -1.)
-    ?(upper = 1.)
-    ?(resolution = 44100)
-    ?(color = Fn.const (Draw.rgb 255 255 255))
-    (signal : Signal.t)
-    w
-    h
-    output_file
+      ?(lower = -1.)
+      ?(upper = 1.)
+      ?(resolution = 44100)
+      ?(color = Fn.const (Draw.rgb 255 255 255))
+      (signal : Signal.t)
+      w
+      h
+      output_file
   =
   let total_samples = Float.iround_up_exn (Int.to_float resolution *. signal.dur) in
   let image = new OImages.rgb24 w h in
@@ -38,8 +38,8 @@ let plot_signal
         and end_x = ix (x + 1) in
         prev_s
         :: List.init (end_x - start_x) ~f:(fun dx ->
-               let t = (start_x + dx) // resolution in
-               signal.f t)
+          let t = (start_x + dx) // resolution in
+          signal.f t)
       in
       let y1 =
         List.min_elt pixel_samples ~compare:Float.compare |> Option.value_exn |> y_of_s
@@ -59,7 +59,7 @@ let _main _input_file output_file =
   let discrete_signal = Converter.discretize signal ~sample_rate:44100 in
   let fft_signal =
     { discrete_signal with
-      samples = fft discrete_signal.samples |> Array.map ~f:Caml.Complex.norm
+      samples = fft discrete_signal.samples |> Array.map ~f:Stdlib.Complex.norm
     }
     |> Converter.zero_order_hold
   in
@@ -80,7 +80,7 @@ let spectrum input_file =
     let discrete_signal = Converter.discretize signal ~sample_rate in
     let fft_signal =
       { discrete_signal with
-        samples = fft discrete_signal.samples |> Array.map ~f:Caml.Complex.norm
+        samples = fft discrete_signal.samples |> Array.map ~f:Stdlib.Complex.norm
       }
       |> Converter.zero_order_hold
       |> Signal.map ~f:(fun s -> Float.log1p s)
@@ -106,7 +106,7 @@ let spectrum2 input_file =
     let fft_length = Array.length discrete_signal.samples in
     let fft_signal =
       { discrete_signal with
-        samples = fft discrete_signal.samples |> Array.map ~f:Caml.Complex.norm
+        samples = fft discrete_signal.samples |> Array.map ~f:Stdlib.Complex.norm
       }
       |> Converter.zero_order_hold
       |> Signal.map ~f:(fun s -> Float.log1p s)

@@ -1,6 +1,6 @@
 (executables
  (names waver)
- (libraries waver waver_pieces)
+ (libraries core_unix.command_unix waver waver_pieces)
  (preprocess
   (pps ppx_jane)))
 

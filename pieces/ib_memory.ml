@@ -1,4 +1,4 @@
-open Core_kernel
+open Core
 open Waver
 module Compo = Composition.Make ()
 
@@ -12,12 +12,12 @@ let render output_file =
     |> String.split_lines
     |> List.zip_exn [ 69; 64; 60; 55 ]
     |> List.map ~f:(fun (midi_offset, line) () ->
-           let notes = Ukulele_tab.Line.parse line in
-           List.iter notes ~f:(fun { pos; note; duration } ->
-               at pos (blip (note + midi_offset) (bt duration)));
-           List.map notes ~f:(fun { pos; duration; _ } -> pos + duration)
-           |> List.max_elt ~compare:Int.compare
-           |> Option.iter ~f:advance)
+      let notes = Ukulele_tab.Line.parse line in
+      List.iter notes ~f:(fun { pos; note; duration } ->
+        at pos (blip (note + midi_offset) (bt duration)));
+      List.map notes ~f:(fun { pos; duration; _ } -> pos + duration)
+      |> List.max_elt ~compare:Int.compare
+      |> Option.iter ~f:advance)
     |> together
   in
   play_ukulele

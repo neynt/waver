@@ -32,8 +32,8 @@ let trigger filename = Wav.save ~sampling_rate:44100 filename [ screen_transitio
 
 let render prefix =
   let save signal filename =
-    Caml.Printf.printf "%s\n" filename;
-    Wav.save ~sampling_rate:44100 (Caml.Filename.concat prefix filename) [ signal ]
+    Stdlib.Printf.printf "%s\n" filename;
+    Wav.save ~sampling_rate:44100 (Stdlib.Filename.concat prefix filename) [ signal ]
   in
   save button "button.wav";
   save screen_transition "screen_transition.wav";

@@ -1,7 +1,6 @@
-open Core_kernel
+open Core
 open Waver
 open Waver_pieces
-module Command = Core.Command
 
 let fps_flag =
   let open Command.Param in
@@ -16,8 +15,8 @@ let midi_demo input_file output_file =
   let time_scale = 1. in
   let offsets_and_signals =
     List.map (List.concat midi_file.tracks) ~f:(fun { midi; time; dur; velo; _ } ->
-        ( time *. time_scale
-        , Instrument.blip midi (dur *. time_scale) ~velo:(Float.of_int velo /. 255.) ))
+      ( time *. time_scale
+      , Instrument.blip midi (dur *. time_scale) ~velo:(Float.of_int velo /. 255.) ))
   in
   Wav.save ~sampling_rate:44100 output_file [ Signal.render offsets_and_signals ]
 
@@ -120,4 +119,4 @@ let command =
     ; "render-workspace", render_workspace_cmd
     ]
 
-let () = Command.run command
+let () = Command_unix.run command

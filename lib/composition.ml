@@ -8,8 +8,8 @@ module Percussion = struct
     let open Angstrom in
     let spaces =
       skip_while (function
-          | ' ' | '\n' -> true
-          | _ -> false)
+        | ' ' | '\n' -> true
+        | _ -> false)
     in
     let lex p = p <* spaces in
     let group = lift (fun x -> Hits (String.to_list x)) (take_while1 Char.is_alpha) in
@@ -17,8 +17,8 @@ module Percussion = struct
       lift
         (fun x -> Rest (String.count x ~f:(Char.( = ) '.')))
         (take_while1 (function
-            | '.' -> true
-            | _ -> false))
+           | '.' -> true
+           | _ -> false))
     in
     let beat = group <|> rest in
     let percussion = spaces *> many (lex beat) in
@@ -28,9 +28,9 @@ module Percussion = struct
     let sounds = Map.of_alist_exn (module Char) sounds in
     let _time, signals =
       List.fold t ~init:(0, []) ~f:(fun (time, signals) note ->
-          match note with
-          | Hits chars -> time + 1, List.map chars ~f:(Map.find_exn sounds)
-          | Rest dur -> time + dur, signals)
+        match note with
+        | Hits chars -> time + 1, List.map chars ~f:(Map.find_exn sounds)
+        | Rest dur -> time + dur, signals)
     in
     signals
 end
@@ -65,9 +65,9 @@ module Make () = struct
 
   let set_mark () =
     marks
-      := match !marks with
-         | [] -> [ !pos ]
-         | _ :: tl -> !pos :: tl
+    := match !marks with
+       | [] -> [ !pos ]
+       | _ :: tl -> !pos :: tl
 
   let pop_mark () =
     match !marks with
@@ -81,11 +81,11 @@ module Make () = struct
   let together parts =
     let latest_pos =
       List.fold ~init:!pos parts ~f:(fun latest_pos part ->
-          set_mark ();
-          part ();
-          let result = Float.max latest_pos !pos in
-          get_mark ();
-          result)
+        set_mark ();
+        part ();
+        let result = Float.max latest_pos !pos in
+        get_mark ();
+        result)
     in
     pos := latest_pos
 
@@ -97,21 +97,21 @@ module Make () = struct
   let melody ~instrument scale text_notation =
     let notes = Melody.of_text_notation text_notation in
     List.iter notes ~f:(fun { content; length } ->
-        match content with
-        | `Pitch { index; accidental } ->
-          play length (instrument (Scale.at scale index + accidental) (bt length))
-        | `Rest -> advance length)
+      match content with
+      | `Pitch { index; accidental } ->
+        play length (instrument (Scale.at scale index + accidental) (bt length))
+      | `Rest -> advance length)
 
   let play_perc text_notation (sounds : (char * Signal.t) List.t) =
     let percussion = Percussion.of_text_notation text_notation in
     let sounds = Map.of_alist_exn (module Char) sounds in
     let _time =
       List.iter percussion ~f:(fun note ->
-          match note with
-          | Hits chars ->
-            List.iter chars ~f:(fun c -> at 0 (Map.find_exn sounds c));
-            advance 1
-          | Rest dur -> advance dur)
+        match note with
+        | Hits chars ->
+          List.iter chars ~f:(fun c -> at 0 (Map.find_exn sounds c));
+          advance 1
+        | Rest dur -> advance dur)
     in
     ()
 end

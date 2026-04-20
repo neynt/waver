@@ -1,6 +1,7 @@
 (* The interesting part of this code was lifted from ocaml-numerical-analysis.
  * [MIT License] Copyright (C) 2015 Akinori ABE *)
-open Core_kernel
+open Base
+module Bigstring = Base_bigstring
 
 let output_byte = Stdlib.output_byte
 let output_string = Stdlib.output_string
@@ -60,9 +61,9 @@ let save ?(bit_depth = 16) ~sampling_rate filename (signals : Signal.t list) =
   (* #bytes of DATA chunk *)
   List.init n ~f:Fn.id
   |> List.iter ~f:(fun i ->
-         let t = i // sampling_rate in
-         List.iter signals ~f:(fun signal ->
-             output_pt oc (Float.clamp_exn ~min:(-1.0) ~max:1.0 Signal.(signal.f t))));
+    let t = i // sampling_rate in
+    List.iter signals ~f:(fun signal ->
+      output_pt oc (Float.clamp_exn ~min:(-1.0) ~max:1.0 Signal.(signal.f t))));
   close_out oc
 
 type wav_format = { channels : int; sampling_rate : int; bit_depth : int }
@@ -82,17 +83,18 @@ let load filename =
     let format_chunk =
       lift3
         (fun channels sampling_rate bit_depth ->
-          let sampling_rate = Int32.to_int_exn sampling_rate in
-          Format { channels; sampling_rate; bit_depth })
+           let sampling_rate = Int32.to_int_exn sampling_rate in
+           Format { channels; sampling_rate; bit_depth })
         (string "fmt "
-        *> chunk_size
-        *> LE.any_uint16
-        (* always 1, for "PCM" format *) *> LE.any_uint16)
+         *> chunk_size
+         *> LE.any_uint16
+         (* always 1, for "PCM" format *) *> LE.any_uint16)
         (* num channels *)
-        LE.any_int32 (* sampling rate *)
+        LE.any_int32
+        (* sampling rate *)
         (LE.any_int32
-        (* data rate *) *> LE.any_uint16 (* bits per sample *)
-        *> LE.any_uint16)
+         (* data rate *) *> LE.any_uint16 (* bits per sample *)
+         *> LE.any_uint16)
       (* bit depth *)
     in
     let data_chunk =
@@ -125,13 +127,13 @@ let load filename =
         Core.print_s [%message "header" (header : string)]);*)
   let { channels; sampling_rate; bit_depth } =
     List.find_map_exn chunks ~f:(function
-        | Format x -> Some x
-        | _ -> None)
+      | Format x -> Some x
+      | _ -> None)
   in
   let samples =
     List.find_map_exn chunks ~f:(function
-        | Data { samples } -> Some samples
-        | _ -> None)
+      | Data { samples } -> Some samples
+      | _ -> None)
   in
   let samples = Bigstring.of_string samples in
   let stride = bit_depth / 8 * channels in
@@ -140,19 +142,19 @@ let load filename =
     match bit_depth with
     | 8 ->
       List.init channels ~f:(fun channel ->
-          Array.init length ~f:(fun i ->
-              Bigstring.unsafe_get_int8 samples ~pos:((i + channel) * stride) // 128))
+        Array.init length ~f:(fun i ->
+          Bigstring.unsafe_get_int8 samples ~pos:((i + channel) * stride) // 128))
     | 16 ->
       List.init channels ~f:(fun channel ->
-          Array.init length ~f:(fun i ->
-              Bigstring.unsafe_get_int16_le samples ~pos:((i + channel) * stride) // 32768))
+        Array.init length ~f:(fun i ->
+          Bigstring.unsafe_get_int16_le samples ~pos:((i + channel) * stride) // 32768))
     | 32 ->
       List.init channels ~f:(fun channel ->
-          Array.init length ~f:(fun i ->
-              (* TODO : maybe this doesn't in fact work? *)
-              Bigstring.unsafe_get_int32_le samples ~pos:((i + channel) * stride)
-              |> Obj.magic))
+        Array.init length ~f:(fun i ->
+          (* TODO : maybe this doesn't in fact work? *)
+          Bigstring.unsafe_get_int32_le samples ~pos:((i + channel) * stride)
+          |> Stdlib.Obj.magic))
     | _ -> Core.failwith "unsupported bit depth"
   in
   List.map samples_by_channel ~f:(fun samples ->
-      { Discrete_signal.samples; sample_rate = sampling_rate })
+    { Discrete_signal.samples; sample_rate = sampling_rate })

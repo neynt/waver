@@ -5,8 +5,11 @@ open Base
  *
  * A lot could be simplified if we got rid of durations and simply operated on
  * functions over time. But that would be bad for performance.
- * *)
-type t = { f : float -> float; dur : float } [@@deriving fields, sexp]
+ *)
+type t = { f : float -> float; dur : float } [@@deriving sexp]
+
+let f t = t.f
+let dur t = t.dur
 
 (* The zero signal is zero for zero time. *)
 let zero = { f = (fun _t -> 0.); dur = 0. }
@@ -48,7 +51,7 @@ let integrate sr { f; dur } =
   Hashtbl.set cache ~key:0 ~data:(f 0.);
   let rec aux sample =
     Hashtbl.find_or_add cache sample ~default:(fun () ->
-        aux (sample - 1) +. f (sample // sr))
+      aux (sample - 1) +. f (sample // sr))
   in
   { f = (fun t -> aux (Int.of_float (Float.round_nearest (t *. Float.of_int sr)))); dur }
 
@@ -71,14 +74,14 @@ let render signals =
   let index = ref (Map.empty (module Float)) in
   let (_ : (float * t) list) =
     List.sort signals ~compare:(fun (start1, _) (start2, _) ->
-        Float.compare start1 start2)
+      Float.compare start1 start2)
     |> List.fold ~init:[] ~f:(fun acc (start, signal) ->
-           let acc =
-             List.filter acc ~f:(fun (start', _) -> Float.(start' > start))
-             |> List.cons (start +. signal.dur, delay start signal)
-           in
-           index := Map.set !index ~key:start ~data:(List.map ~f:snd acc);
-           acc)
+      let acc =
+        List.filter acc ~f:(fun (start', _) -> Float.(start' > start))
+        |> List.cons (start +. signal.dur, delay start signal)
+      in
+      index := Map.set !index ~key:start ~data:(List.map ~f:snd acc);
+      acc)
   in
   let f t =
     let _, signals =
