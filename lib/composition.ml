@@ -79,15 +79,15 @@ module Make () = struct
   let get_mark () = pos := List.hd_exn !marks
 
   let together parts =
-    let latest_pos =
-      List.fold ~init:!pos parts ~f:(fun latest_pos part ->
-        set_mark ();
-        part ();
-        let result = Float.max latest_pos !pos in
-        get_mark ();
-        result)
-    in
-    pos := latest_pos
+    (* Save/restore via a local so nested `together` calls don't leak state
+       through the shared marks stack. *)
+    let start = !pos in
+    let latest = ref start in
+    List.iter parts ~f:(fun part ->
+      pos := start;
+      part ();
+      latest := Float.max !latest !pos);
+    pos := !latest
 
   let result () =
     List.filter !notes ~f:(fun (t, _) -> Float.(t < bt' !pos_end))

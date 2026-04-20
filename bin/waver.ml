@@ -42,6 +42,20 @@ let render_workspace_cmd =
       let output_file = anon ("output_file" %: string) in
       fun () -> Workspace.render output_file]
 
+let render_chiptune_beat_cmd =
+  Command.basic
+    ~summary:"Render a Cave Story x vocaloid x breakcore beat."
+    [%map_open.Command
+      let output_file = anon ("output_file" %: string) in
+      fun () -> Chiptune_beat.render output_file]
+
+let render_awakening_cmd =
+  Command.basic
+    ~summary:"Render Awakening — an 8-section chiptune-breakcore story track."
+    [%map_open.Command
+      let output_file = anon ("output_file" %: string) in
+      fun () -> Awakening.render output_file]
+
 module Spectrum = struct
   let frame_cmd =
     Command.basic
@@ -117,6 +131,8 @@ let command =
     ; "spectrum", Spectrum.command
     ; "render-adrestia-sfx", render_adrestia_sfx_cmd
     ; "render-workspace", render_workspace_cmd
+    ; "render-chiptune-beat", render_chiptune_beat_cmd
+    ; "render-awakening", render_awakening_cmd
     ]
 
 let () = Command_unix.run command
