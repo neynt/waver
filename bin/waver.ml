@@ -56,6 +56,69 @@ let render_awakening_cmd =
       let output_file = anon ("output_file" %: string) in
       fun () -> Awakening.render output_file]
 
+let render_hyperbloom_cmd =
+  Command.basic
+    ~summary:"Render Hyperbloom — a loopable hyperpop fragment (online vs nature)."
+    [%map_open.Command
+      let output_file = anon ("output_file" %: string) in
+      fun () -> Hyperbloom.render output_file]
+
+let render_vowel_demo_cmd =
+  Command.basic
+    ~summary:"Render each vowel synth (ah ee oo oh eh uh) at A4 then E5."
+    [%map_open.Command
+      let output_file = anon ("output_file" %: string) in
+      fun () -> Vowel_demo.render output_file]
+
+let render_vowel_sharpness_demo_cmd =
+  Command.basic
+    ~summary:"Render ah/ee/oo at sharpness 1.0, 2.0, 3.0 for A/B comparison."
+    [%map_open.Command
+      let output_file = anon ("output_file" %: string) in
+      fun () -> Vowel_sharpness_demo.render output_file]
+
+let render_vowel_floor_demo_cmd =
+  Command.basic
+    ~summary:"Render ah/ee/oo sweeping the formant-gain floor at sharpness 2.5."
+    [%map_open.Command
+      let output_file = anon ("output_file" %: string) in
+      fun () -> Vowel_floor_demo.render output_file]
+
+let render_vowel_upper_sharp_demo_cmd =
+  Command.basic
+    ~summary:"Render ah/ee/oo sweeping sharpness_upper (F2-F4) with F1 wide."
+    [%map_open.Command
+      let output_file = anon ("output_file" %: string) in
+      fun () -> Vowel_upper_sharp_demo.render output_file]
+
+let render_hello_moon_cmd =
+  Command.basic
+    ~summary:"Sing 'hello moon' via the IPA phone synth."
+    [%map_open.Command
+      let output_file = anon ("output_file" %: string) in
+      fun () -> Hello_moon.render output_file]
+
+let render_phone_demo_cmd =
+  Command.basic
+    ~summary:"Play every IPA phone in isolation on A4 for diagnostics."
+    [%map_open.Command
+      let output_file = anon ("output_file" %: string) in
+      fun () -> Phone_demo.render output_file]
+
+let render_sushi_cmd =
+  Command.basic
+    ~summary:"Sing 'sushi' — sibilant test (s, sh, both vowels)."
+    [%map_open.Command
+      let output_file = anon ("output_file" %: string) in
+      fun () -> Sushi.render output_file]
+
+let render_see_you_soon_cmd =
+  Command.basic
+    ~summary:"Sing 'see you soon' — short sentence test."
+    [%map_open.Command
+      let output_file = anon ("output_file" %: string) in
+      fun () -> See_you_soon.render output_file]
+
 module Spectrum = struct
   let frame_cmd =
     Command.basic
@@ -133,6 +196,15 @@ let command =
     ; "render-workspace", render_workspace_cmd
     ; "render-chiptune-beat", render_chiptune_beat_cmd
     ; "render-awakening", render_awakening_cmd
+    ; "render-hyperbloom", render_hyperbloom_cmd
+    ; "render-vowel-demo", render_vowel_demo_cmd
+    ; "render-vowel-sharpness-demo", render_vowel_sharpness_demo_cmd
+    ; "render-vowel-floor-demo", render_vowel_floor_demo_cmd
+    ; "render-vowel-upper-sharp-demo", render_vowel_upper_sharp_demo_cmd
+    ; "render-hello-moon", render_hello_moon_cmd
+    ; "render-phone-demo", render_phone_demo_cmd
+    ; "render-sushi", render_sushi_cmd
+    ; "render-see-you-soon", render_see_you_soon_cmd
     ]
 
 let () = Command_unix.run command

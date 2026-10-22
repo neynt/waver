@@ -33,4 +33,22 @@ val freq : float -> t -> t
 val chirp_lin : float -> float -> float -> t -> t
 val chirp_exp : float -> float -> float -> t -> t
 val echo : float -> t -> t
+val lowpass : int -> cutoff:float -> t -> t
+val highpass : int -> cutoff:float -> t -> t
+val bandpass : int -> lo:float -> hi:float -> t -> t
+
+val biquad
+  :  int
+  -> b0:float
+  -> b1:float
+  -> b2:float
+  -> a0:float
+  -> a1:float
+  -> a2:float
+  -> t
+  -> t
+
+val biquad_lowpass : int -> freq:float -> q:float -> t -> t
+val biquad_highpass : int -> freq:float -> q:float -> t -> t
+val biquad_bandpass : int -> freq:float -> q:float -> t -> t
 val pwlin : ?y0:float -> (float * float) list -> t

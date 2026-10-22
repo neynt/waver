@@ -126,6 +126,165 @@ let chirp_exp f1 f2 length =
 
 let echo delay { f; dur } = { f = (fun t -> (f t +. f (t +. delay)) /. 2.); dur }
 
+(* Grow a float array in place to hold at least [n] elements. *)
+let grow_to buf n =
+  let cur_len = Array.length !buf in
+  if n >= cur_len
+  then (
+    let new_len = Int.max (n + 1) (2 * cur_len) in
+    let nb = Array.create ~len:new_len 0. in
+    Array.blit ~src:!buf ~src_pos:0 ~dst:nb ~dst_pos:0 ~len:cur_len;
+    buf := nb)
+
+(* One-pole lowpass. y[n] = (1-a)*y[n-1] + a*x[n], a = 1 - exp(-2πf_c/sr).
+   Samples are filled iteratively into a growable array so no stack recursion. *)
+let lowpass sr ~cutoff { f; dur } =
+  let sr_f = Float.of_int sr in
+  let a = 1. -. Float.exp (-.2. *. pi *. cutoff /. sr_f) in
+  let buf = ref (Array.create ~len:1 0.) in
+  let filled = ref 0 in
+  let ensure target =
+    let target = Int.max 0 target in
+    grow_to buf target;
+    for i = !filled to target do
+      let x = f (Float.of_int i /. sr_f) in
+      let prev = if i = 0 then 0. else (!buf).(i - 1) in
+      (!buf).(i) <- ((1. -. a) *. prev) +. (a *. x)
+    done;
+    if target >= !filled then filled := target + 1
+  in
+  { f =
+      (fun t ->
+        if Float.(t < 0.)
+        then 0.
+        else (
+          let i = Int.of_float (Float.round_nearest (t *. sr_f)) in
+          ensure i;
+          (!buf).(i)))
+  ; dur
+  }
+
+(* One-pole highpass. y[n] = α*(y[n-1] + x[n] - x[n-1]), α = exp(-2πf_c/sr).
+   Note: the input signal [f] is called exactly once per sample — reusing the
+   previous sample's [x] — so stochastic inputs (noise) yield a single coherent
+   sequence. Calling [f] twice per iteration would generate independent random
+   values each time and turn the recursion into a variance-accumulating walk. *)
+let highpass sr ~cutoff { f; dur } =
+  let sr_f = Float.of_int sr in
+  let a = Float.exp (-.2. *. pi *. cutoff /. sr_f) in
+  let buf = ref (Array.create ~len:1 0.) in
+  let prev_x = ref 0. in
+  let filled = ref 0 in
+  let ensure target =
+    let target = Int.max 0 target in
+    grow_to buf target;
+    for i = !filled to target do
+      let x = f (Float.of_int i /. sr_f) in
+      let y_prev = if i = 0 then 0. else (!buf).(i - 1) in
+      (!buf).(i) <- a *. (y_prev +. x -. !prev_x);
+      prev_x := x
+    done;
+    if target >= !filled then filled := target + 1
+  in
+  { f =
+      (fun t ->
+        if Float.(t < 0.)
+        then 0.
+        else (
+          let i = Int.of_float (Float.round_nearest (t *. sr_f)) in
+          ensure i;
+          (!buf).(i)))
+  ; dur
+  }
+
+let bandpass sr ~lo ~hi s = s |> highpass sr ~cutoff:lo |> lowpass sr ~cutoff:hi
+
+(* Biquad — generic 2nd-order IIR. Same single-call-per-sample contract as the
+   one-pole filters: state for x[n-1], x[n-2] is kept in closure refs so noise
+   inputs aren't re-sampled across iterations. *)
+let biquad sr ~b0 ~b1 ~b2 ~a0 ~a1 ~a2 { f; dur } =
+  let sr_f = Float.of_int sr in
+  let b0 = b0 /. a0 in
+  let b1 = b1 /. a0 in
+  let b2 = b2 /. a0 in
+  let a1 = a1 /. a0 in
+  let a2 = a2 /. a0 in
+  let buf = ref (Array.create ~len:1 0.) in
+  let x_prev1 = ref 0. in
+  let x_prev2 = ref 0. in
+  let filled = ref 0 in
+  let ensure target =
+    let target = Int.max 0 target in
+    grow_to buf target;
+    for i = !filled to target do
+      let x = f (Float.of_int i /. sr_f) in
+      let y_prev1 = if i = 0 then 0. else (!buf).(i - 1) in
+      let y_prev2 = if i <= 1 then 0. else (!buf).(i - 2) in
+      let y =
+        (b0 *. x)
+        +. (b1 *. !x_prev1)
+        +. (b2 *. !x_prev2)
+        -. (a1 *. y_prev1)
+        -. (a2 *. y_prev2)
+      in
+      (!buf).(i) <- y;
+      x_prev2 := !x_prev1;
+      x_prev1 := x
+    done;
+    if target >= !filled then filled := target + 1
+  in
+  { f =
+      (fun t ->
+        if Float.(t < 0.)
+        then 0.
+        else (
+          let i = Int.of_float (Float.round_nearest (t *. sr_f)) in
+          ensure i;
+          (!buf).(i)))
+  ; dur
+  }
+
+(* RBJ cookbook biquads. [q] controls resonance (Q ≈ 0.707 = Butterworth, flat
+   passband; higher Q = peakier; lower Q = gentler). *)
+let biquad_lowpass sr ~freq ~q =
+  let omega = 2. *. pi *. freq /. Float.of_int sr in
+  let alpha = Float.sin omega /. (2. *. q) in
+  let cos_w = Float.cos omega in
+  biquad
+    sr
+    ~b0:((1. -. cos_w) /. 2.)
+    ~b1:(1. -. cos_w)
+    ~b2:((1. -. cos_w) /. 2.)
+    ~a0:(1. +. alpha)
+    ~a1:(-.2. *. cos_w)
+    ~a2:(1. -. alpha)
+
+let biquad_highpass sr ~freq ~q =
+  let omega = 2. *. pi *. freq /. Float.of_int sr in
+  let alpha = Float.sin omega /. (2. *. q) in
+  let cos_w = Float.cos omega in
+  biquad
+    sr
+    ~b0:((1. +. cos_w) /. 2.)
+    ~b1:(-.(1. +. cos_w))
+    ~b2:((1. +. cos_w) /. 2.)
+    ~a0:(1. +. alpha)
+    ~a1:(-.2. *. cos_w)
+    ~a2:(1. -. alpha)
+
+(* Resonant bandpass — peak gain = Q at [freq]. *)
+let biquad_bandpass sr ~freq ~q =
+  let omega = 2. *. pi *. freq /. Float.of_int sr in
+  let alpha = Float.sin omega /. (2. *. q) in
+  biquad
+    sr
+    ~b0:alpha
+    ~b1:0.
+    ~b2:(-.alpha)
+    ~a0:(1. +. alpha)
+    ~a1:(-.2. *. Float.cos omega)
+    ~a2:(1. -. alpha)
+
 let pwlin ?(y0 = 0.0) transitions =
   let fns, _, _ =
     List.fold

@@ -49,15 +49,24 @@ let vowel
       ?(breath = 0.02)
       ?(vib_depth = 0.006)
       ?(vib_rate = 5.0)
+      ?(sharpness = 1.0)
+      ?sharpness_upper
+      ?(floor = 0.)
       ~formants
       midi
       dur
   =
   let f0 = Temperament.equal 440. midi in
+  let sharpness_upper = Option.value sharpness_upper ~default:sharpness in
   let formant_gain freq =
-    List.fold formants ~init:0. ~f:(fun acc (fc, bw, amp) ->
-      let d = freq -. fc in
-      acc +. (amp *. bw *. bw /. ((d *. d) +. (bw *. bw))))
+    let g =
+      List.foldi formants ~init:0. ~f:(fun i acc (fc, bw, amp) ->
+        let sh = if i = 0 then sharpness else sharpness_upper in
+        let bw = bw /. sh in
+        let d = freq -. fc in
+        acc +. (amp *. bw *. bw /. ((d *. d) +. (bw *. bw))))
+    in
+    Float.max g floor
   in
   let harmonics =
     List.init n_harmonics ~f:(fun i ->
@@ -87,12 +96,23 @@ let oo_formants = [ 300., 80., 1.0; 870., 90., 0.7; 2240., 120., 0.3; 3200., 140
 let oh_formants = [ 570., 80., 1.0; 840., 90., 0.8; 2410., 120., 0.4; 3300., 140., 0.1 ]
 let eh_formants = [ 530., 80., 1.0; 1840., 110., 0.8; 2480., 130., 0.5; 3500., 160., 0.2 ]
 let uh_formants = [ 640., 80., 1.0; 1190., 100., 0.6; 2390., 130., 0.3; 3200., 140., 0.1 ]
-let ah ?velo ?breath midi dur = vowel ~formants:ah_formants ?velo ?breath midi dur
-let ee ?velo ?breath midi dur = vowel ~formants:ee_formants ?velo ?breath midi dur
-let oo ?velo ?breath midi dur = vowel ~formants:oo_formants ?velo ?breath midi dur
-let oh ?velo ?breath midi dur = vowel ~formants:oh_formants ?velo ?breath midi dur
-let eh ?velo ?breath midi dur = vowel ~formants:eh_formants ?velo ?breath midi dur
-let uh ?velo ?breath midi dur = vowel ~formants:uh_formants ?velo ?breath midi dur
+let ah ?velo ?breath ?sharpness ?sharpness_upper ?floor midi dur =
+  vowel ~formants:ah_formants ?velo ?breath ?sharpness ?sharpness_upper ?floor midi dur
+
+let ee ?velo ?breath ?sharpness ?sharpness_upper ?floor midi dur =
+  vowel ~formants:ee_formants ?velo ?breath ?sharpness ?sharpness_upper ?floor midi dur
+
+let oo ?velo ?breath ?sharpness ?sharpness_upper ?floor midi dur =
+  vowel ~formants:oo_formants ?velo ?breath ?sharpness ?sharpness_upper ?floor midi dur
+
+let oh ?velo ?breath ?sharpness ?sharpness_upper ?floor midi dur =
+  vowel ~formants:oh_formants ?velo ?breath ?sharpness ?sharpness_upper ?floor midi dur
+
+let eh ?velo ?breath ?sharpness ?sharpness_upper ?floor midi dur =
+  vowel ~formants:eh_formants ?velo ?breath ?sharpness ?sharpness_upper ?floor midi dur
+
+let uh ?velo ?breath ?sharpness ?sharpness_upper ?floor midi dur =
+  vowel ~formants:uh_formants ?velo ?breath ?sharpness ?sharpness_upper ?floor midi dur
 
 (* Backward-compat alias — the old [vocaloid_ah] now uses the sharper synth. *)
 let vocaloid_ah = ah
@@ -201,3 +221,62 @@ let rimshot =
   let click = triangle 1800. |> mul (decay 0.005) |> gain 0.4 in
   let air = unpure_noise |> mul (decay 0.02) |> gain 0.2 in
   add click air |> crop 0.04 |> gain 0.25
+
+(* Supersaw — detuned stacked saws. Hyperpop/EDM staple. *)
+let supersaw ?(velo = 1.0) ?(detune = 0.012) ?(n = 7) midi dur =
+  let freq = Temperament.equal 440. midi in
+  let spread_max = Int.max 1 (n / 2) in
+  let voices =
+    List.init n ~f:(fun i ->
+      let offset = i - (n / 2) in
+      let spread = Float.of_int offset /. Float.of_int spread_max in
+      let f = freq *. (1. +. (detune *. spread)) in
+      saw f |> gain (1. /. Float.of_int n))
+    |> List.reduce_balanced ~f:add
+    |> Option.value ~default:zero
+  in
+  voices
+  |> mul (pwlin [ 0.006, 1.; Float.max 0.01 (dur -. 0.05), 1.; 0.04, 0. ])
+  |> gain (0.12 *. velo)
+  |> crop dur
+
+(* Sidechain-style pump: amplitude dips once per beat. *)
+let duck ?(strength = 0.8) ~bpm s =
+  let beat = 60. /. bpm in
+  let low = 1. -. strength in
+  let attack = 0.004 in
+  let release = Float.min 0.13 (beat *. 0.7) in
+  let one =
+    pwlin
+      ~y0:1.0
+      [ attack, low; release, 1.; Float.max 0.001 (beat -. attack -. release), 1. ]
+    |> crop beat
+  in
+  let total = s.dur in
+  let n = Int.of_float (total /. beat) + 2 in
+  let env =
+    List.init n ~f:(fun i -> Float.of_int i *. beat, one) |> render |> crop total
+  in
+  mul env s
+
+(* 808-style subby kick — sine with fast exp pitch drop, long tail. *)
+let kick_808 ?(velo = 1.0) () =
+  let base = 50. in
+  let drop = 8. in
+  let decay_r = 55. in
+  let phase =
+    create_inf (fun t ->
+      base *. (t +. (drop /. decay_r *. (1. -. Float.exp (-. decay_r *. t)))))
+  in
+  phase_mod phase (sine 1.0)
+  |> mul (pwlin [ 0.003, 1.; 0.5, 0.35; 0.18, 0. ])
+  |> gain (0.55 *. velo)
+  |> crop 0.7
+
+(* Vocal chop — retrigger a vowel synth [n] times across [total_dur]. *)
+let vox_chop ~n ~synth midi total_dur =
+  let each = total_dur /. Float.of_int n in
+  let piece = synth midi each in
+  List.init n ~f:(fun i -> Float.of_int i *. each, piece)
+  |> render
+  |> crop total_dur
